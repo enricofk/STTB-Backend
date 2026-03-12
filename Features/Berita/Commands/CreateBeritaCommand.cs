@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 using MediatR;
 using STTB.Backend.Data;
-using BeritaModel = STTB.Backend.Models.Berita;
+using BeritaModel = STTB.Backend.Models.Berita; // Pakai Alias
 
 namespace STTB.Backend.Features.Berita.Commands
 {
@@ -10,17 +10,16 @@ namespace STTB.Backend.Features.Berita.Commands
         public string Judul { get; set; }
         public string Konten { get; set; }
         public string ThumbnailUrl { get; set; }
-        public int KategoriBeritaId { get; set; }
+        public int KategoriId { get; set; } // Sesuaikan penamaan inputnya
     }
 
-    // Point Killer #1: FluentValidation
     public class CreateBeritaValidator : AbstractValidator<CreateBeritaCommand>
     {
         public CreateBeritaValidator()
         {
             RuleFor(x => x.Judul).NotEmpty().MaximumLength(200);
             RuleFor(x => x.Konten).NotEmpty();
-            RuleFor(x => x.KategoriBeritaId).GreaterThan(0).WithMessage("Kategori Berita harus dipilih.");
+            RuleFor(x => x.KategoriId).GreaterThan(0).WithMessage("Kategori Berita harus dipilih.");
         }
     }
 
@@ -35,18 +34,17 @@ namespace STTB.Backend.Features.Berita.Commands
 
         public async Task<int> Handle(CreateBeritaCommand request, CancellationToken cancellationToken)
         {
-            // Point Killer #5: Async Await & Acceloka Coding Conv (LINQ Lambda)
             var model = new BeritaModel
             {
                 Judul = request.Judul,
-                Slug = request.Judul.ToLower().Replace(" ", "-"), // Contoh logic sederhana
+                Slug = request.Judul.ToLower().Replace(" ", "-"),
                 Konten = request.Konten,
                 Thumbnail_Url = request.ThumbnailUrl,
-                Kategori_Berita_Id = request.KategoriBeritaId,
-                Tanggal_Publish = DateTime.UtcNow
+                Kategori_Id = request.KategoriId,     
+                Tanggal_Publikasi = DateTime.UtcNow 
             };
 
-            _context.Berita.Add(model);
+            _context.Beritas.Add(model);
             await _context.SaveChangesAsync(cancellationToken);
 
             return model.Id;

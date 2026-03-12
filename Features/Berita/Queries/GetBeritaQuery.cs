@@ -1,13 +1,13 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using STTB.Backend.Data;
-using STTB.Backend.Models;
+using BeritaModel = STTB.Backend.Models.Berita; 
 
 namespace STTB.Backend.Features.Berita.Queries
 {
-    public class GetBeritaQuery : IRequest<List<Berita>> { }
+    public class GetBeritaQuery : IRequest<List<BeritaModel>> { }
 
-    public class GetBeritaHandler : IRequestHandler<GetBeritaQuery, List<Berita>>
+    public class GetBeritaHandler : IRequestHandler<GetBeritaQuery, List<BeritaModel>>
     {
         private readonly AppDbContext _context;
 
@@ -16,12 +16,11 @@ namespace STTB.Backend.Features.Berita.Queries
             _context = context;
         }
 
-        public async Task<List<Berita>> Handle(GetBeritaQuery request, CancellationToken cancellationToken)
+        public async Task<List<BeritaModel>> Handle(GetBeritaQuery request, CancellationToken cancellationToken)
         {
-            return await _context.Berita
-            return await _context.Berita
+            return await _context.Beritas
                 .Include(b => b.Kategori_Berita)
-                .OrderByDescending(b => b.Tanggal_Publish)
+                .OrderByDescending(b => b.Tanggal_Publikasi) 
                 .ToListAsync(cancellationToken);
         }
     }
