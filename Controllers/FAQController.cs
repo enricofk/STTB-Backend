@@ -30,5 +30,32 @@ namespace STTB.Backend.Controllers
             var result = await _mediator.Send(new GetFAQQuery());
             return Ok(result);
         }
+
+        [HttpPut("{id}")]
+        [Authorize] 
+        public async Task<IActionResult> Update(int id, UpdateFAQCommand command)
+        {
+            if (id != command.Id)
+                return BadRequest("ID pada URL dan body data tidak cocok.");
+
+            var isSuccess = await _mediator.Send(command);
+
+            if (!isSuccess)
+                return NotFound(new { message = "Data FAQ tidak ditemukan." });
+
+            return Ok(new { message = "FAQ berhasil diperbarui!" });
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize] 
+        public async Task<IActionResult> Delete(int id)
+        {
+            var isSuccess = await _mediator.Send(new DeleteFAQCommand { Id = id });
+
+            if (!isSuccess)
+                return NotFound(new { message = "Data FAQ tidak ditemukan." });
+
+            return Ok(new { message = "FAQ berhasil dihapus!" });
+        }
     }
 }
