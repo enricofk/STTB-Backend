@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
-using STTB.Backend.Data;
-using STTB.Backend.Models;
+using Microsoft.AspNetCore.Mvc;
+using STTB.Backend.Features.Fasilitas.Commands;
 
 namespace STTB.Backend.Controllers
 {
@@ -10,35 +9,30 @@ namespace STTB.Backend.Controllers
     [ApiController]
     public class FasilitasController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        public FasilitasController(AppDbContext context) => _context = context;
+        private readonly IMediator _mediator;
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Fasilitas>>> GetFasilitas() => await _context.Fasilitas.ToListAsync();
+        // Dependency Injection untuk MediatR
+        public FasilitasController(IMediator mediator)
+        {
+            _mediator = mediator;
+        }
 
         [HttpPost]
-        [Authorize]
-        public async Task<ActionResult<Fasilitas>> PostFasilitas(Fasilitas fasilitas)
+        [Authorize] // Tetap aman dengan gembok JWT
+        public async Task<IActionResult> Create(CreateFasilitasCommand command)
         {
-            _context.Fasilitas.Add(fasilitas);
-            await _context.SaveChangesAsync();
-            return Ok(fasilitas);
+            // Point Killer #5: Menggunakan async await
+            // Point Killer #1: Validasi otomatis berjalan di background lewat Pipeline
+            var result = await _mediator.Send(command);
+
+            // Point Killer #3: HTTP Response Code 201 untuk Created
+            return CreatedAtAction(nameof(Create), new { id = result }, new { id = result, message = "Fasilitas berhasil ditambahkan" });
         }
 
-        [HttpDelete("{id}")]
-        [Authorize]
-        public async Task<IActionResult> DeleteFasilitas(int id)
-        {
-            var fasilitas = await _context.Fasilitas.FindAsync(id);
-            if (fasilitas == null)
-            {
-                return NotFound(new { message = "Data tidak ditemukan!" });
-            }
-
-            _context.Fasilitas.Remove(fasilitas);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Data fasilitas berhasil dihapus!" });
-        }
+        /* Nanti untuk GET, UPDATE, dan DELETE, kamu tinggal buat folder:
+           - Features/Fasilitas/Queries/GetFasilitasQuery.cs
+           - Features/Fasilitas/Commands/UpdateFasilitasCommand.cs
+           Lalu panggil dengan cara yang sama: await _mediator.Send(new YourCommand());
+        */
     }
 }

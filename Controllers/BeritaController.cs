@@ -1,44 +1,35 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using STTB.Backend.Data;
-using STTB.Backend.Models;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using STTB.Backend.Features.Berita.Commands;
+using STTB.Backend.Features.Berita.Queries;
 
 namespace STTB.Backend.Controllers
 {
-    // Route URL nanti akan menjadi: /api/berita
     [Route("api/[controller]")]
     [ApiController]
     public class BeritaController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IMediator _mediator;
 
-        // Constructor untuk menyambungkan Controller dengan Database (Dependency Injection)
-        public BeritaController(AppDbContext context)
+        public BeritaController(IMediator mediator)
         {
-            _context = context;
+            _mediator = mediator;
         }
 
-        // --- ENDPOINT 1: MENGAMBIL SEMUA DATA BERITA ---
-        // GET: api/berita
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Berita>>> GetBerita()
-        {
-            var beritaList = await _context.Beritas
-                                           .Include(b => b.Kategori_Berita)
-                                           .ToListAsync();
-            return Ok(beritaList);
-        }
-
-        // --- ENDPOINT 2: MENAMBAH DATA BERITA BARU ---
-        // POST: api/berita
         [HttpPost]
-        public async Task<ActionResult<Berita>> PostBerita(Berita berita)
+        [Authorize]
+        public async Task<IActionResult> Create(CreateBeritaCommand command)
         {
-            // Menambahkan data baru ke tabel
-            _context.Beritas.Add(berita);
-            await _context.SaveChangesAsync(); // Simpan perubahan ke Database
+            var id = await _mediator.Send(command);
+            return CreatedAtAction(nameof(Create), new { id }, new { id, message = "Berita berhasil diterbitkan!" });
+        }
 
-            return Ok(berita);
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var result = await _mediator.Send(new GetBeritaQuery());
+            return Ok(result);
         }
     }
 }
