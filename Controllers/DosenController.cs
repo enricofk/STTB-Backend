@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using STTB.Backend.Data;
-using STTB.Backend.Models;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using STTB.Backend.Features.Dosen.Commands;
+using STTB.Backend.Features.Dosen.Queries;
 
 namespace STTB.Backend.Controllers
 {
@@ -9,28 +10,26 @@ namespace STTB.Backend.Controllers
     [ApiController]
     public class DosenController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IMediator _mediator;
 
-        public DosenController(AppDbContext context)
+        public DosenController(IMediator mediator)
         {
-            _context = context;
+            _mediator = mediator;
         }
 
-        // GET: api/dosen
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Dosen>>> GetDosen()
-        {
-            var dosenList = await _context.Dosens.ToListAsync();
-            return Ok(dosenList);
-        }
-
-        // POST: api/dosen
         [HttpPost]
-        public async Task<ActionResult<Dosen>> PostDosen(Dosen dosen)
+        [Authorize] 
+        public async Task<IActionResult> Create(CreateDosenCommand command)
         {
-            _context.Dosens.Add(dosen);
-            await _context.SaveChangesAsync();
-            return Ok(dosen);
+            var id = await _mediator.Send(command);
+            return CreatedAtAction(nameof(Create), new { id }, new { id, message = "Data Dosen berhasil ditambahkan!" });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var result = await _mediator.Send(new GetDosenQuery());
+            return Ok(result);
         }
     }
 }
