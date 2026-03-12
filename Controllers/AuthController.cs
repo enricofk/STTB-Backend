@@ -1,11 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using STTB.Backend.Data;
-using STTB.Backend.Models;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using STTB.Backend.Features.Auth.Commands;
+using STTB.Backend.Features.Auth.Queries;
 
 namespace STTB.Backend.Controllers
 {
@@ -13,80 +9,31 @@ namespace STTB.Backend.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly IConfiguration _configuration; 
+        private readonly IMediator _mediator;
 
-        public AuthController(AppDbContext context, IConfiguration configuration)
+        public AuthController(IMediator mediator)
         {
-            _context = context;
-            _configuration = configuration;
-        }
-
-        public class RegisterDto
-        {
-            public string Username { get; set; }
-            public string Email { get; set; }
-            public string Password { get; set; }
-        }
-
-        public class LoginDto
-        {
-            public string Username { get; set; }
-            public string Password { get; set; }
+            _mediator = mediator;
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterDto request)
+        public async Task<IActionResult> Register(RegisterCommand command)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == request.Username))
-                return BadRequest(new { message = "Username sudah digunakan!" });
-
-            string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-
-            var newUser = new User
-            {
-                Username = request.Username,
-                Email = request.Email,
-                Password_Hash = passwordHash,
-                Role = "Admin"
-            };
-
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Registrasi Admin berhasil!" });
+            var id = await _mediator.Send(command);
+            return CreatedAtAction(nameof(Register), new { id }, new { id, message = "User berhasil didaftarkan!" });
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginDto request)
+        public async Task<IActionResult> Login(LoginQuery query)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
-            if (user == null) return BadRequest(new { message = "Username tidak ditemukan." });
+            // Mediator akan mengembalikan string token
+            var token = await _mediator.Send(query);
 
-            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.Password_Hash))
-                return BadRequest(new { message = "Password salah." });
-
-            var jwtSettings = _configuration.GetSection("Jwt");
-            var key = Encoding.ASCII.GetBytes(jwtSettings["Key"] ?? "");
-
-            var tokenDescriptor = new SecurityTokenDescriptor
+            return Ok(new
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.Name, user.Username),
-                    new Claim(ClaimTypes.Role, user.Role)
-                }),
-                Expires = DateTime.UtcNow.AddHours(2),
-                Issuer = jwtSettings["Issuer"],
-                Audience = jwtSettings["Audience"],
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var tokenString = tokenHandler.WriteToken(token); 
-
-            return Ok(new { message = "Login sukses!", token = tokenString, role = user.Role });
+                message = "Login berhasil",
+                token = token
+            });
         }
     }
 }
