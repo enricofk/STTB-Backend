@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using STTB.Backend.Data;
-using STTB.Backend.Models;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using STTB.Backend.Features.Kegiatan.Commands;
+using STTB.Backend.Features.Kegiatan.Queries;
 
 namespace STTB.Backend.Controllers
 {
@@ -9,30 +10,26 @@ namespace STTB.Backend.Controllers
     [ApiController]
     public class KegiatanController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IMediator _mediator;
 
-        public KegiatanController(AppDbContext context)
+        public KegiatanController(IMediator mediator)
         {
-            _context = context;
+            _mediator = mediator;
         }
 
-        // GET: api/Kegiatan
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Kegiatan>>> GetKegiatan()
-        {
-            var kegiatanList = await _context.Kegiatans
-                                             .Include(k => k.Kategori_Kegiatan)
-                                             .ToListAsync();
-            return Ok(kegiatanList);
-        }
-
-        // POST: api/Kegiatan
         [HttpPost]
-        public async Task<ActionResult<Kegiatan>> PostKegiatan(Kegiatan kegiatan)
+        [Authorize] 
+        public async Task<IActionResult> Create(CreateKegiatanCommand command)
         {
-            _context.Kegiatans.Add(kegiatan);
-            await _context.SaveChangesAsync();
-            return Ok(kegiatan);
+            var id = await _mediator.Send(command);
+            return CreatedAtAction(nameof(Create), new { id }, new { id, message = "Kegiatan berhasil ditambahkan ke kalender!" });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var result = await _mediator.Send(new GetKegiatanQuery());
+            return Ok(result);
         }
     }
 }
