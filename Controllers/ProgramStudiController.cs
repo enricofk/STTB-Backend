@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using STTB.Backend.Data;
-using STTB.Backend.Models;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using STTB.Backend.Features.ProgramStudi.Commands;
+using STTB.Backend.Features.ProgramStudi.Queries;
 
 namespace STTB.Backend.Controllers
 {
@@ -9,42 +10,17 @@ namespace STTB.Backend.Controllers
     [ApiController]
     public class ProgramStudiController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IMediator _mediator;
+        public ProgramStudiController(IMediator mediator) => _mediator = mediator;
 
-        public ProgramStudiController(AppDbContext context)
+        [HttpPost, Authorize]
+        public async Task<IActionResult> Create(CreateProgramStudiCommand command)
         {
-            _context = context;
+            var id = await _mediator.Send(command);
+            return CreatedAtAction(nameof(Create), new { id }, new { id, message = "Prodi berhasil ditambahkan!" });
         }
 
-        // --- ENDPOINT GET: MENGAMBIL DATA PRODI BESERTA DETAILNYA ---
-        // GET: api/ProgramStudi
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Program_Studi>>> GetProgramStudi()
-        {
-            // Ambil semua Program Studi beserta detail Ketua Prodi dan daftar Mata Kuliah
-            var prodiList = await _context.Program_Studis
-                                          .Include(p => p.Ketua_Prodi)
-                                          .Include(p => p.Mata_Kuliahs)
-                                          .ToListAsync();
-            return Ok(prodiList);
-        }
-
-        // --- ENDPOINT PUT: MENGUPDATE KETUA PRODI ---
-        // PUT: api/ProgramStudi/update-ketua/1
-        [HttpPut("update-ketua/{id}")]
-        public async Task<IActionResult> UpdateKetuaProdi(int id, [FromBody] int dosenId)
-        {
-            var prodi = await _context.Program_Studis.FindAsync(id);
-            if (prodi == null)
-            {
-                return NotFound("Program Studi tidak ditemukan.");
-            }
-
-            // Update ID Ketua Prodi
-            prodi.Ketua_Prodi_Id = dosenId;
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Ketua Prodi berhasil diperbarui!", data = prodi });
-        }
+        public async Task<IActionResult> GetAll() => Ok(await _mediator.Send(new GetProgramStudiQuery()));
     }
 }

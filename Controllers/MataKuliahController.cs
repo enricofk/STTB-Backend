@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using STTB.Backend.Data;
-using STTB.Backend.Models;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using STTB.Backend.Features.MataKuliah.Commands;
+using STTB.Backend.Features.MataKuliah.Queries;
 
 namespace STTB.Backend.Controllers
 {
@@ -9,31 +10,17 @@ namespace STTB.Backend.Controllers
     [ApiController]
     public class MataKuliahController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IMediator _mediator;
+        public MataKuliahController(IMediator mediator) => _mediator = mediator;
 
-        public MataKuliahController(AppDbContext context)
+        [HttpPost, Authorize]
+        public async Task<IActionResult> Create(CreateMataKuliahCommand command)
         {
-            _context = context;
+            var id = await _mediator.Send(command);
+            return CreatedAtAction(nameof(Create), new { id }, new { id, message = "Mata Kuliah berhasil ditambahkan!" });
         }
 
-        // GET: api/matakuliah
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Mata_Kuliah>>> GetMataKuliah()
-        {
-            // Mengambil daftar MK beserta nama Prodinya (JOIN)
-            var mkList = await _context.Mata_Kuliahs
-                                       .Include(m => m.Program_Studi)
-                                       .ToListAsync();
-            return Ok(mkList);
-        }
-
-        // POST: api/matakuliah
-        [HttpPost]
-        public async Task<ActionResult<Mata_Kuliah>> PostMataKuliah(Mata_Kuliah mk)
-        {
-            _context.Mata_Kuliahs.Add(mk);
-            await _context.SaveChangesAsync();
-            return Ok(mk);
-        }
+        public async Task<IActionResult> GetAll() => Ok(await _mediator.Send(new GetMataKuliahQuery()));
     }
 }

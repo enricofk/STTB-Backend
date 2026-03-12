@@ -25,6 +25,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="Features\Dokumen\Commands\" />
+	  <Folder Include="Features\Dokumen\Queries\" />
+	  <Folder Include="Features\FAQ\Commands\" />
+	  <Folder Include="Features\FAQ\Queries\" />
 	  <Folder Include="Features\Fasilitas\Queries\" />
 	  <Folder Include="logs\" />
 	</ItemGroup>
