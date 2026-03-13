@@ -50,7 +50,7 @@ namespace STTB.Backend.Controllers
         [Authorize] 
         public async Task<IActionResult> Delete(int id)
         {
-            var isSuccess = await _mediator.Send(new DeleteFAQCommand { Id = id });
+            var isSuccess = await _mediator.Send(new DeleteFAQCommand    { Id = id });
 
             if (!isSuccess)
                 return NotFound(new { message = "Data FAQ tidak ditemukan." });
